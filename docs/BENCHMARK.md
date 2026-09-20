@@ -72,3 +72,10 @@ baseline, so the two are directly comparable. The model is registered in MLflow 
 Caveat: tuning used time-series folds over all the data, so the newest 20% was not completely
 unseen during tuning. There is no fully untouched holdout (the Kaggle test file has no
 labels), so treat these numbers as slightly optimistic.
+
+## Rule for future tuning and model selection
+
+Before any tuning, set aside the newest 20% of transactions as a locked final test set. Tune and
+cross-validate only on the older 80%, and score the locked set once at the end. The first tuning run
+did not do this (see the caveat above), so `tune_models.py` and `train_final.py` should be changed
+to follow this rule the next time tuning is repeated, for example after adding new features.
