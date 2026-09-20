@@ -61,3 +61,7 @@ Thumbs.db
 mlflow.db
 reports_benchmark_log.txt
 tuning_log.txt
+
+# Team-visible docs and result tables (re-include after the broad *.md / *.csv rules)
+!docs/*.md
+!reports/*.csv
