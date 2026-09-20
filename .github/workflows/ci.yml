@@ -1,8 +1,9 @@
 name: CI
 
-# Runs the tests on every push and on pull requests into dev/main.
+# Runs the tests on pull requests into dev/main, and on pushes to dev/main.
 on:
   push:
+    branches: [dev, main]
   pull_request:
     branches: [dev, main]
 

@@ -78,6 +78,8 @@ def score_params(name, params, X, y, cfg):
                 "precision_at_k": precision_at_k(y_te, scores, cfg["precision_at_k_fraction"]),
             }
         )
+    if not folds:
+        raise ValueError("No fold had any fraud in its test chunk; use more rows (sample_rows).")
     folds = pd.DataFrame(folds)
     out = {f"{m}_mean": folds[m].mean() for m in folds.columns}
     out["pr_auc_std"] = folds["pr_auc"].std()

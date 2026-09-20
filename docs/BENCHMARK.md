@@ -84,3 +84,19 @@ setting (and warns if the tuning file has no holdout recorded).
 The results above were produced BEFORE this change, so they are slightly optimistic (see the
 caveat). Any tuning or benchmark run from now on is clean. To get a clean final number, rerun
 `tune_models` then `train_final`.
+
+## Known issues (found in final code review, not fixed on purpose)
+
+Fixing these would change the model and the reported numbers, and rerunning tuning takes about
+45 minutes, so they are recorded here instead. Fix them together with the next tuning run.
+
+1. **LightGBM `subsample` had no effect.** In `tune_models.make_model`, LightGBM needs
+   `subsample_freq=1` for row subsampling to switch on; without it every `subsample` value trains
+   the same model. XGBoost did subsample, so the tuned comparison was slightly less fair than
+   described. The final LightGBM model also does not subsample. Fix: pass `subsample_freq=1`.
+2. **Category encoding is not saved with the model.** The registered `payguard-lightgbm` takes
+   integer category codes built from the training data (`encode_for_sklearn`), and the mapping from
+   text to code is not stored with it. A serving service must rebuild the same mapping or store it
+   alongside the model, otherwise new or reordered categories give wrong scores. The code lists
+   were also built with the holdout rows included (tiny effect). Fix this when building `src/serving/`.
+3. The reported scores were produced before the holdout rule (see the caveat above).
