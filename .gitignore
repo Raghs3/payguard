@@ -57,3 +57,6 @@ Thumbs.db
 !README.md
 !docs/PRD.md
 !docs/architecture.md
+# MLflow local tracking database and benchmark log
+mlflow.db
+reports_benchmark_log.txt
