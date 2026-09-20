@@ -60,3 +60,4 @@ Thumbs.db
 # MLflow local tracking database and benchmark log
 mlflow.db
 reports_benchmark_log.txt
+tuning_log.txt

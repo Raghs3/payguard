@@ -60,3 +60,18 @@ def test_benchmark_cross_validation_runs():
     assert "xgboost" in set(results["model"])
     top = results.iloc[0]
     assert top["pr_auc_mean"] > 0.5
+
+
+def test_tuning_runs_and_compares_both_models():
+    from src.models.tune_models import tune
+
+    cfg = {
+        "n_splits": 3,
+        "n_trials": 2,
+        "sample_rows": None,
+        "random_state": 0,
+        "precision_at_k_fraction": 0.05,
+    }
+    results = tune(fake_transactions(), cfg)
+    assert set(results["model"]) == {"lightgbm", "xgboost"}
+    assert (results.groupby("model").size() == 2).all()  # same budget for both

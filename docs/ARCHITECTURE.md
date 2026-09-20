@@ -54,7 +54,7 @@ High-level system design. Update this as decisions solidify; log the *why* behin
 
 ## 3. Key design questions (open)
 
-- **Real-time feature store design** — what features need online (sub-100ms) computation vs. can be precomputed offline? How is feature freshness guaranteed at inference time?
+- **Real-time feature store design** — what features need online (sub-100ms) computation vs. can be precomputed offline? How is feature freshness guaranteed at inference time? *Draft answer in `docs/FEATURE_STORE_DESIGN.md`.*
 - **Retraining pipeline** — trigger conditions (scheduled vs. drift-triggered), how new labels (confirmed fraud/not-fraud) flow back in, rollback strategy if a new model regresses.
 
 ## 4. Metrics that matter
