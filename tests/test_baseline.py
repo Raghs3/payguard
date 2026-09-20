@@ -97,17 +97,25 @@ def test_final_model_trains_and_picks_best_params(tmp_path):
     assert metrics["roc_auc"] > 0.9
 
 
-def test_tuning_never_touches_holdout_and_final_checks_it(tmp_path):
+def test_tuning_never_touches_holdout_and_final_checks_it(tmp_path, monkeypatch):
     import pytest
+    from src.models import tune_models
     from src.models.train_final import best_lightgbm_params
-    from src.models.tune_models import tune
 
     df = fake_transactions(1000)
     cfg = {"n_splits": 3, "n_trials": 1, "random_state": 0,
            "precision_at_k_fraction": 0.05, "holdout_fraction": 0.3}
-    # Poison the newest 30%: if tuning used it, the poisoned rows would break the fold logic.
-    df.loc[df.index >= 700, "TransactionAmt"] = float("nan")
-    results = tune(df, cfg)
+
+    seen_rows = []
+    real_score = tune_models.score_params
+
+    def spy(name, params, X, y, cfg_):
+        seen_rows.append(len(X))  # how many rows tuning is allowed to use
+        return real_score(name, params, X, y, cfg_)
+
+    monkeypatch.setattr(tune_models, "score_params", spy)
+    results = tune_models.tune(df, cfg)
+    assert seen_rows and all(n == 700 for n in seen_rows)  # 1000 rows minus the locked 30%
     assert (results["holdout_fraction"] == 0.3).all()
 
     csv = tmp_path / "t.csv"

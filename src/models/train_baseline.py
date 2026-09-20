@@ -48,8 +48,9 @@ def make_features(df):
     y = df[TARGET]
     X = df.drop(columns=[TARGET, ID_COL, TIME_COL])
     # Text columns become 'category' so XGBoost can use them natively.
-    for col in X.select_dtypes(include=["object", "str"]).columns:
-        X[col] = X[col].astype("category")
+    for col in X.columns:
+        if not pd.api.types.is_numeric_dtype(X[col]):  # works on pandas 2 and 3
+            X[col] = X[col].astype("category")
     return X, y
 
 

@@ -140,6 +140,8 @@ def cross_validate(df, cfg):
                     "fit_seconds": time.time() - start,
                 }
             )
+        if not fold_metrics:
+            raise ValueError("No fold had any fraud in its test chunk; use more rows (sample_rows).")
         folds = pd.DataFrame(fold_metrics)
         row = {"model": name, "folds_used": len(folds)}
         for metric in folds.columns:
