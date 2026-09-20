@@ -21,3 +21,38 @@ LightGBM: best PR-AUC and precision@1%, lowest variance among the top models, an
 fastest boosted-tree model to train. Isolation forest is far weaker alone; it may still
 help as an extra anomaly feature later. Next: tune LightGBM and XGBoost fairly before
 finalizing.
+
+## Tuned comparison (LightGBM vs XGBoost)
+
+Run with `python -m src.models.tune_models` (config: `configs/tuning.json`). Both models
+got the same 12 random-search settings, the same 5 time-series CV folds, and both searched
+how strongly to up-weight fraud. Every trial is in `reports/tuning_results.csv` and in the
+MLflow experiment `payguard-tuning`.
+
+| | LightGBM | XGBoost |
+|---|---|---|
+| Best PR-AUC (mean of 5 folds) | **0.576** | 0.566 |
+| Fold-to-fold std of that PR-AUC | 0.022 | 0.024 |
+| Best ROC-AUC | 0.900 | 0.899 |
+| Best precision@1% | 0.927 | 0.924 |
+| Average PR-AUC over all 12 trials | 0.547 | 0.532 |
+| Time per trial (avg, 5 folds) | 76 s | 133 s |
+| Untuned PR-AUC (from the table above) | 0.562 | 0.498 |
+
+Best settings found: LightGBM `n_estimators=600, learning_rate=0.1, max_depth=8,
+subsample=1.0, colsample_bytree=0.4, min_child_weight=5, reg_lambda=1`. XGBoost
+`n_estimators=600, learning_rate=0.05, max_depth=8, subsample=0.8, colsample_bytree=0.6,
+min_child_weight=5, reg_lambda=10`. Neither preferred extra fraud up-weighting
+(`fraud_weight_fraction=0` won for both).
+
+### Reading the result
+- Tuning helped XGBoost a lot (0.498 to 0.566), so the untuned ranking was partly unfair to it.
+- LightGBM is still ahead, but the gap (0.010) is smaller than the fold-to-fold spread
+  (about 0.02), so the two are close to a tie on accuracy. LightGBM is also about 1.75x faster
+  to train, and that speed is the clearer advantage.
+- Caveats: only 12 random trials each; the same folds were used to pick and to report the
+  best settings, so the best-of-12 scores are slightly optimistic; no separate final holdout yet.
+
+### Decision
+Keep **LightGBM** as the working model. Before calling it final: retrain the best settings on
+the training period and score once on a held-out latest time slice.
