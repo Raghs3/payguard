@@ -1,0 +1,35 @@
+# Core
+pandas
+numpy
+scikit-learn
+imbalanced-learn      # SMOTE
+
+# Models
+xgboost
+lightgbm
+# torch-geometric      # uncomment if/when GNN work starts
+
+# Experiment tracking
+mlflow
+
+# Feature store
+feast
+
+# Streaming
+kafka-python
+
+# Orchestration
+apache-airflow
+
+# Serving / export
+onnx
+onnxruntime
+# tritonclient
+
+# Monitoring
+evidently
+
+# Dev
+pytest
+python-dotenv
+jupyter
