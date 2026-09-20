@@ -56,3 +56,19 @@ min_child_weight=5, reg_lambda=10`. Neither preferred extra fraud up-weighting
 ### Decision
 Keep **LightGBM** as the working model. Before calling it final: retrain the best settings on
 the training period and score once on a held-out latest time slice.
+
+## Final model
+
+`python -m src.models.train_final` trains LightGBM with the best tuned settings on the oldest
+80% of transactions and scores the newest 20%. This is the same split as the first XGBoost
+baseline, so the two are directly comparable. The model is registered in MLflow as
+`payguard-lightgbm` (version 1).
+
+| | PR-AUC | ROC-AUC | Precision@1% |
+|---|---|---|---|
+| First baseline (XGBoost, default settings) | 0.494 | 0.888 | 0.843 |
+| **Final (LightGBM, tuned)** | **0.571** | **0.908** | **0.893** |
+
+Caveat: tuning used time-series folds over all the data, so the newest 20% was not completely
+unseen during tuning. There is no fully untouched holdout (the Kaggle test file has no
+labels), so treat these numbers as slightly optimistic.

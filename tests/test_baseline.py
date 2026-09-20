@@ -75,3 +75,23 @@ def test_tuning_runs_and_compares_both_models():
     results = tune(fake_transactions(), cfg)
     assert set(results["model"]) == {"lightgbm", "xgboost"}
     assert (results.groupby("model").size() == 2).all()  # same budget for both
+
+
+def test_final_model_trains_and_picks_best_params(tmp_path):
+    from src.models.train_final import best_lightgbm_params, train_final
+    from src.models.tune_models import SEARCH_SPACE
+
+    base = {k: v[0] for k, v in SEARCH_SPACE.items()}
+    rows = [
+        {"model": "lightgbm", "pr_auc_mean": 0.3, **base},
+        {"model": "lightgbm", "pr_auc_mean": 0.9, **{**base, "max_depth": 8}},
+        {"model": "xgboost", "pr_auc_mean": 0.99, **base},  # other model must be ignored
+    ]
+    csv = tmp_path / "tuning.csv"
+    pd.DataFrame(rows).to_csv(csv, index=False)
+    params = best_lightgbm_params(csv)
+    assert params["max_depth"] == 8 and isinstance(params["n_estimators"], int)
+
+    cfg = {"train_fraction": 0.8, "precision_at_k_fraction": 0.05, "random_state": 0}
+    _, metrics, _ = train_final(fake_transactions(), params, cfg)
+    assert metrics["roc_auc"] > 0.9
