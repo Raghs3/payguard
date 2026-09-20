@@ -1,0 +1,17 @@
+{
+  "raw_dir": "data/raw",
+  "train_fraction": 0.8,
+  "precision_at_k_fraction": 0.01,
+  "mlflow_experiment": "payguard-baseline",
+  "xgboost_params": {
+    "n_estimators": 300,
+    "max_depth": 6,
+    "learning_rate": 0.1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "tree_method": "hist",
+    "enable_categorical": true,
+    "eval_metric": "aucpr",
+    "random_state": 42
+  }
+}

@@ -1,0 +1,26 @@
+name: CI
+
+# Runs the tests on every push and on pull requests into dev/main.
+on:
+  push:
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # Only what the tests need. The full requirements.txt (Airflow, Feast, ...)
+      # is heavy and not needed to test the model code.
+      - name: Install test dependencies
+        run: pip install pandas numpy scikit-learn xgboost lightgbm mlflow pytest
+
+      - name: Run tests
+        run: python -m pytest tests -q

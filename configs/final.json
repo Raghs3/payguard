@@ -1,0 +1,8 @@
+{
+  "raw_dir": "data/raw",
+  "holdout_fraction": 0.2,
+  "precision_at_k_fraction": 0.01,
+  "random_state": 42,
+  "mlflow_experiment": "payguard-final",
+  "registered_model_name": "payguard-lightgbm"
+}

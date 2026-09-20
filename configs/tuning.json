@@ -1,0 +1,10 @@
+{
+  "raw_dir": "data/raw",
+  "n_splits": 5,
+  "n_trials": 12,
+  "sample_rows": null,
+  "random_state": 42,
+  "precision_at_k_fraction": 0.01,
+  "mlflow_experiment": "payguard-tuning",
+  "holdout_fraction": 0.2
+}

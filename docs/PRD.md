@@ -31,6 +31,7 @@ The team evaluated three sponsor-assigned problem statements before selecting Pa
 - [ ] Low-latency inference service (Triton/Seldon, ONNX export)
 - [ ] Drift/performance monitoring (Evidently/WhyLabs)
 - [ ] Retraining pipeline (Airflow-orchestrated)
+- [ ] Cloud deployment on AWS (developed local-first, see section 5b)
 
 **Out of scope (v1):**
 - [ ] Production-grade auth/user management
@@ -43,10 +44,17 @@ The team evaluated three sponsor-assigned problem statements before selecting Pa
 - **Class imbalance handling:** SMOTE (or equivalent) during training.
 - **Data risk:** low — public benchmark, unlike AgroScan's field-image dependency.
 
+## 5b. Deployment target
+
+- **Goal:** actually deploy on **AWS** (cloud MLOps), not only run locally.
+- **Approach:** develop local-first (venv, then Docker/docker-compose), then move to AWS. Moving early would slow the modeling work; moving later stays cheap if the portability habits in `docs/ARCHITECTURE.md` section 6 are followed from day one.
+- **Cost guardrail:** use free tier/credits, set a billing alert before creating anything, shut resources down when idle.
+- **Status:** decided 2026-09-20. Which AWS services (e.g. ECS vs EKS vs SageMaker) is still open.
+
 ## 6. Success metrics
 
 - **Model quality:** precision-recall AUC, precision@k (top-k flagged transactions).
-- **Latency:** [target, e.g. p99 inference < 100ms] — to be set once the serving stack is benchmarked.
+- **Latency:** [target — team workflow suggests < 200ms end-to-end; PRD example was p99 < 100ms; decide] — to be set once the serving stack is benchmarked.
 - **Operational:** monitored drift with automated retraining trigger; MLflow-tracked experiment lineage for every model in production.
 
 ## 7. Milestones
@@ -65,4 +73,5 @@ The team evaluated three sponsor-assigned problem statements before selecting Pa
 
 - Real-time feature store design for PayGuard — flagged for deeper exploration.
 - Retraining pipeline design for PayGuard (in addition to ClaimShield's) — flagged for deeper exploration.
+- AWS service choices (serving, orchestration, Kafka vs Kinesis) — decide when the local Docker setup works.
 - [Add as they come up — move resolved ones to `docs/DECISIONS.md`]

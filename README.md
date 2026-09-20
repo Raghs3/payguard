@@ -47,6 +47,11 @@ A real-time transaction fraud-scoring system: transactions stream in, get scored
 3. Pull/download the dataset per [`data/README.md`](data/README.md) — raw data is not committed to the repo.
 4. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the pieces fit together and where your task's code should live.
 5. See [`PROGRESS.md`](PROGRESS.md) for current status and what to work on next.
+6. View experiment runs: `mlflow ui --backend-store-uri sqlite:///mlflow.db` (runs are stored in `mlflow.db`; plain `mlflow ui` looks in the wrong place and shows nothing).
+
+## Deployment plan
+
+Built local-first, then deployed on AWS. Follow the portability habits in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (section 6): config over hard-coding, configurable MLflow location, Docker, no secrets in git.
 
 ## Branching & workflow
 
