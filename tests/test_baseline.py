@@ -92,6 +92,26 @@ def test_final_model_trains_and_picks_best_params(tmp_path):
     params = best_lightgbm_params(csv)
     assert params["max_depth"] == 8 and isinstance(params["n_estimators"], int)
 
-    cfg = {"train_fraction": 0.8, "precision_at_k_fraction": 0.05, "random_state": 0}
+    cfg = {"holdout_fraction": 0.2, "precision_at_k_fraction": 0.05, "random_state": 0}
     _, metrics, _ = train_final(fake_transactions(), params, cfg)
     assert metrics["roc_auc"] > 0.9
+
+
+def test_tuning_never_touches_holdout_and_final_checks_it(tmp_path):
+    import pytest
+    from src.models.train_final import best_lightgbm_params
+    from src.models.tune_models import tune
+
+    df = fake_transactions(1000)
+    cfg = {"n_splits": 3, "n_trials": 1, "random_state": 0,
+           "precision_at_k_fraction": 0.05, "holdout_fraction": 0.3}
+    # Poison the newest 30%: if tuning used it, the poisoned rows would break the fold logic.
+    df.loc[df.index >= 700, "TransactionAmt"] = float("nan")
+    results = tune(df, cfg)
+    assert (results["holdout_fraction"] == 0.3).all()
+
+    csv = tmp_path / "t.csv"
+    results.to_csv(csv, index=False)
+    best_lightgbm_params(csv, expected_holdout=0.3)  # matches: fine
+    with pytest.raises(ValueError):
+        best_lightgbm_params(csv, expected_holdout=0.2)  # mismatch: refuses

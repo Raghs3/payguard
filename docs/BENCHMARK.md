@@ -73,9 +73,14 @@ Caveat: tuning used time-series folds over all the data, so the newest 20% was n
 unseen during tuning. There is no fully untouched holdout (the Kaggle test file has no
 labels), so treat these numbers as slightly optimistic.
 
-## Rule for future tuning and model selection
+## Rule for tuning and model selection (now enforced in code)
 
-Before any tuning, set aside the newest 20% of transactions as a locked final test set. Tune and
-cross-validate only on the older 80%, and score the locked set once at the end. The first tuning run
-did not do this (see the caveat above), so `tune_models.py` and `train_final.py` should be changed
-to follow this rule the next time tuning is repeated, for example after adding new features.
+The newest 20% of transactions (`holdout_fraction` in the configs) is locked away before any
+tuning. `benchmark_models.py` and `tune_models.py` only see the older 80%, and `train_final.py`
+scores the locked 20% once. `tune_models.py` records the `holdout_fraction` it used in
+`reports/tuning_results.csv`, and `train_final.py` refuses to run if it doesn't match its own
+setting (and warns if the tuning file has no holdout recorded).
+
+The results above were produced BEFORE this change, so they are slightly optimistic (see the
+caveat). Any tuning or benchmark run from now on is clean. To get a clean final number, rerun
+`tune_models` then `train_final`.

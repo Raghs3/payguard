@@ -3,6 +3,10 @@
 Run from the repo root (with the venv active):
     python -m src.models.tune_models
 
+Holdout rule: the newest `holdout_fraction` of transactions is locked away and never used
+here. Tuning and cross-validation only see the older part. train_final.py scores the locked
+part once at the end.
+
 Fairness rules (so the ranking can be trusted):
   - both models get the same number of random-search trials
   - both are scored on the exact same time-series CV folds
@@ -22,7 +26,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import ParameterSampler, TimeSeriesSplit
 
 from src.models.benchmark_models import encode_for_sklearn
-from src.models.train_baseline import TIME_COL, load_data, make_features, precision_at_k
+from src.models.train_baseline import TIME_COL, load_data, make_features, precision_at_k, time_split
 
 CONFIG_PATH = Path("configs/tuning.json")
 RESULTS_PATH = Path("reports/tuning_results.csv")
@@ -83,7 +87,8 @@ def score_params(name, params, X, y, cfg):
 
 def tune(df, cfg):
     """Random search for each model. Returns a dataframe with one row per trial."""
-    df = df.sort_values(TIME_COL).reset_index(drop=True)
+    holdout_fraction = cfg.get("holdout_fraction", 0.2)
+    df, _locked_holdout = time_split(df, 1 - holdout_fraction)  # tuning never sees the holdout
     if cfg.get("sample_rows"):
         df = df.iloc[: cfg["sample_rows"]]
     X, y = make_features(df)
@@ -96,7 +101,7 @@ def tune(df, cfg):
         features = X_num if name == "lightgbm" else X
         for i, params in enumerate(trials):
             result = score_params(name, params, features, y, cfg)
-            rows.append({"model": name, "trial": i, **params, **result})
+            rows.append({"model": name, "trial": i, "holdout_fraction": holdout_fraction, **params, **result})
             print(f"{name} trial {i}: PR-AUC {result['pr_auc_mean']:.4f} ({result['seconds']:.0f}s)", flush=True)
     return pd.DataFrame(rows)
 

@@ -3,8 +3,9 @@
 Run from the repo root (with the venv active):
     python -m src.models.train_final
 
-Uses the same time split as train_baseline.py (oldest 80% train, newest 20% test),
-so the score is directly comparable to the first XGBoost baseline.
+Trains on everything except the locked holdout (newest 20% by default) and scores the
+holdout once. The tuning run must have used the same holdout_fraction, otherwise the
+score is not a clean final test.
 """
 import json
 from pathlib import Path
@@ -22,9 +23,21 @@ CONFIG_PATH = Path("configs/final.json")
 TUNING_RESULTS = Path("reports/tuning_results.csv")
 
 
-def best_lightgbm_params(results_path):
-    """Pick the LightGBM trial with the highest mean PR-AUC from the tuning run."""
+def best_lightgbm_params(results_path, expected_holdout=None):
+    """Pick the LightGBM trial with the highest mean PR-AUC from the tuning run.
+
+    Also checks the tuning run kept the same holdout locked away as we score on now.
+    """
     results = pd.read_csv(results_path)
+    if expected_holdout is not None:
+        if "holdout_fraction" not in results.columns:
+            print("WARNING: this tuning run did not lock away a holdout, so the score below "
+                  "is slightly optimistic. Re-run tune_models to get a clean number.")
+        elif not (results["holdout_fraction"] == expected_holdout).all():
+            raise ValueError(
+                f"Tuning used holdout_fraction {results['holdout_fraction'].unique()} but final "
+                f"uses {expected_holdout}. Re-run tune_models with the same value."
+            )
     best = results[results["model"] == "lightgbm"].sort_values("pr_auc_mean", ascending=False).iloc[0]
     params = {k: best[k] for k in SEARCH_SPACE}
     # csv gives numpy types; convert whole-number floats back to ints for LightGBM
@@ -34,11 +47,11 @@ def best_lightgbm_params(results_path):
 
 
 def train_final(df, params, cfg):
-    """Train on the oldest part, score on the newest. Returns (model, metrics)."""
+    """Train on the older part, score the locked holdout once. Returns (model, metrics, example)."""
     df = df.sort_values(TIME_COL).reset_index(drop=True)
     X, y = make_features(df)
-    X = encode_for_sklearn(X)
-    cut = int(len(X) * cfg["train_fraction"])
+    X = encode_for_sklearn(X)  # category codes come from ALL rows so train/holdout match
+    cut = int(len(X) * (1 - cfg["holdout_fraction"]))
     X_train, y_train, X_test, y_test = X.iloc[:cut], y.iloc[:cut], X.iloc[cut:], y.iloc[cut:]
 
     model = make_model("lightgbm", params, y_train, cfg["random_state"])
@@ -54,7 +67,7 @@ def train_final(df, params, cfg):
 
 def main():
     cfg = json.loads(CONFIG_PATH.read_text())
-    params = best_lightgbm_params(TUNING_RESULTS)
+    params = best_lightgbm_params(TUNING_RESULTS, expected_holdout=cfg["holdout_fraction"])
     print("Best tuned LightGBM settings:", params)
     df = load_data(cfg["raw_dir"])
 

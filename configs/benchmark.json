@@ -15,5 +15,6 @@
     "enable_categorical": true,
     "eval_metric": "aucpr",
     "random_state": 42
-  }
+  },
+  "holdout_fraction": 0.2
 }

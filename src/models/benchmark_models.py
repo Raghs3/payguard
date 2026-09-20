@@ -25,7 +25,7 @@ from sklearn.model_selection import TimeSeriesSplit
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from src.models.train_baseline import TIME_COL, load_data, make_features, precision_at_k
+from src.models.train_baseline import TIME_COL, load_data, make_features, precision_at_k, time_split
 
 CONFIG_PATH = Path("configs/benchmark.json")
 RESULTS_PATH = Path("reports/benchmark_results.csv")
@@ -113,7 +113,8 @@ def fit_and_score(model, unsupervised, X_train, y_train, X_test):
 
 def cross_validate(df, cfg):
     """Return one row of averaged metrics per model."""
-    df = df.sort_values(TIME_COL).reset_index(drop=True)
+    # Lock away the newest part for the final test; models are compared on the older part only.
+    df, _locked_holdout = time_split(df, 1 - cfg.get("holdout_fraction", 0.2))
     if cfg.get("sample_rows"):  # keep the first N rows in time order for a quick run
         df = df.iloc[: cfg["sample_rows"]]
     X, y = make_features(df)

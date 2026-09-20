@@ -1,6 +1,6 @@
 {
   "raw_dir": "data/raw",
-  "train_fraction": 0.8,
+  "holdout_fraction": 0.2,
   "precision_at_k_fraction": 0.01,
   "random_state": 42,
   "mlflow_experiment": "payguard-final",
