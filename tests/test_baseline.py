@@ -44,3 +44,19 @@ def test_train_and_evaluate_beats_random():
     }
     _, metrics = train_and_evaluate(fake_transactions(), cfg)
     assert metrics["roc_auc"] > 0.9
+
+
+def test_benchmark_cross_validation_runs():
+    from src.models.benchmark_models import cross_validate
+
+    cfg = {
+        "n_splits": 3,
+        "sample_rows": None,
+        "random_state": 0,
+        "precision_at_k_fraction": 0.05,
+        "xgboost_params": {"n_estimators": 10, "tree_method": "hist", "enable_categorical": True},
+    }
+    results = cross_validate(fake_transactions(), cfg)
+    assert "xgboost" in set(results["model"])
+    top = results.iloc[0]
+    assert top["pr_auc_mean"] > 0.5
