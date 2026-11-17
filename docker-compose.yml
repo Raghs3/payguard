@@ -1,0 +1,16 @@
+services:
+  payguard-api:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+    image: payguard-api:local
+    ports:
+      - "8000:8000"
+    environment:
+      PAYGUARD_MODEL_PATH: ${PAYGUARD_MODEL_PATH:-/app/models/payguard-lightgbm.joblib}
+      PAYGUARD_FRAUD_THRESHOLD: ${PAYGUARD_FRAUD_THRESHOLD:-0.5}
+    volumes:
+      - type: bind
+        source: ./models
+        target: /app/models
+        read_only: true
