@@ -15,9 +15,9 @@ import mlflow
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from src.models.benchmark_models import encode_for_sklearn
 from src.models.train_baseline import TIME_COL, load_data, make_features, precision_at_k
 from src.models.tune_models import SEARCH_SPACE, make_model
+from src.models.model_package import PayGuardPreprocessor, save_model_package, save_preprocessing_json
 
 CONFIG_PATH = Path("configs/final.json")
 TUNING_RESULTS = Path("reports/tuning_results.csv")
@@ -46,11 +46,14 @@ def best_lightgbm_params(results_path, expected_holdout=None):
     return {k: (v.item() if hasattr(v, "item") else v) for k, v in params.items()}
 
 
-def train_final(df, params, cfg):
+def train_final(df, params, cfg, return_preprocessor=False):
     """Train on the older part, score the locked holdout once. Returns (model, metrics, example)."""
     df = df.sort_values(TIME_COL).reset_index(drop=True)
     X, y = make_features(df)
-    X = encode_for_sklearn(X)  # category codes come from ALL rows so train/holdout match
+    # Fit category maps using the same full feature frame as before. This preserves
+    # every known category's original pandas category code, including holdout values.
+    preprocessor = PayGuardPreprocessor.fit(X)
+    X = preprocessor.transform(X)
     cut = int(len(X) * (1 - cfg["holdout_fraction"]))
     X_train, y_train, X_test, y_test = X.iloc[:cut], y.iloc[:cut], X.iloc[cut:], y.iloc[cut:]
 
@@ -62,7 +65,8 @@ def train_final(df, params, cfg):
         "roc_auc": float(roc_auc_score(y_test, scores)),
         "precision_at_k": precision_at_k(y_test, scores, cfg["precision_at_k_fraction"]),
     }
-    return model, metrics, X_train.head(5)
+    result = (model, metrics, X_train.head(5))
+    return (*result, preprocessor) if return_preprocessor else result
 
 
 def main():
@@ -74,13 +78,22 @@ def main():
     mlflow.set_experiment(cfg["mlflow_experiment"])
     with mlflow.start_run(run_name="lightgbm-final"):
         mlflow.log_params(params)
-        model, metrics, example = train_final(df, params, cfg)
+        model, metrics, example, preprocessor = train_final(df, params, cfg, return_preprocessor=True)
         mlflow.log_metrics(metrics)
+        package_path = Path(cfg.get("model_package_path", "models/payguard-lightgbm.joblib"))
+        save_model_package(package_path, model, preprocessor)
+        mlflow.log_artifact(str(package_path), artifact_path="model_package")
+        preprocessing_path = package_path.with_suffix(".preprocessing.json")
+        save_preprocessing_json(preprocessing_path, preprocessor)
+        mlflow.log_artifact(str(preprocessing_path), artifact_path="model_package")
         # registered_model_name puts a versioned copy in the MLflow model registry
         mlflow.lightgbm.log_model(
             model.booster_, name="model", registered_model_name=cfg["registered_model_name"],
             input_example=example,
         )
+        # Keep the self-contained package at package_path for local/API use;
+        # the separate JSON copy is only a human-readable MLflow companion.
+        preprocessing_path.unlink()
     for name, value in metrics.items():
         print(f"{name}: {value:.4f}")
 

@@ -1,0 +1,27 @@
+.git/
+.venv/
+venv/
+env/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Keep private / large data and generated model artifacts on the host.
+data/
+models/
+*.joblib
+*.pkl
+*.parquet
+*.csv
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Development-only files.
+tests/
+notebooks/
+reports/
+docs/
+.pytest_cache/
+.env
+.env.*

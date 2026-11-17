@@ -22,6 +22,8 @@ kafka-python
 apache-airflow
 
 # Serving / export
+fastapi
+uvicorn[standard]
 onnx
 onnxruntime
 # tritonclient

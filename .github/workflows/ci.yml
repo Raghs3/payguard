@@ -17,11 +17,20 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: infra/requirements-serving.txt
 
-      # Only what the tests need. The full requirements.txt (Airflow, Feast, ...)
-      # is heavy and not needed to test the model code.
+      # Install the pinned inference stack plus packages imported by the
+      # synthetic model tests. The complete requirements.txt includes heavy
+      # orchestration / feature-store dependencies that CI does not need.
       - name: Install test dependencies
-        run: pip install pandas numpy scikit-learn xgboost lightgbm mlflow pytest
+        run: |
+          python -m pip install -r infra/requirements-serving.txt
+          python -m pip install xgboost mlflow pytest
 
       - name: Run tests
         run: python -m pytest tests -q
+
+      # The model is supplied as a read-only runtime mount. .dockerignore keeps
+      # the ignored artifact and private datasets out of this build context.
+      - name: Build serving image
+        run: docker build --file infra/Dockerfile --tag payguard-api:ci .
